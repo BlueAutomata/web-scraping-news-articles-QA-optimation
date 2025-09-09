@@ -98,9 +98,21 @@ class ElEspectadorSpider(scrapy.Spider):
 
     def parse_news_page(self, response):
         category_name = response.meta.get("category")
-        # Extract all paragraphs with class "font--secondary"
-        paragraphs = response.css("p.font--secondary::text").getall()
-        full_content = " ".join([p.strip() for p in paragraphs if p.strip()])
+        
+        # Get <h2 class="font--primary"> and <p> inside article/section in order
+        nodes = response.css("article section h2.font--primary, article section p")
+
+        content_list = []
+        for node in nodes:
+            text = node.xpath("string()").get()  # keeps nested <b> text
+            if text:
+                text = text.strip()
+                if text:
+                    content_list.append(text)
+
+        # Join with new lines instead of spaces
+        full_content = "\n".join(content_list)
+   
         yield {
             "Category": category_name,
             "Sub-Category": response.meta.get("sub_category"),
