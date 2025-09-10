@@ -4,6 +4,8 @@ from datetime import datetime
 from urllib.parse import urlparse
 import os
 
+from newsscraper.items import NewsItem
+
 class ElEspectadorSpider(scrapy.Spider):
     name = "el_espectador_spider"
     allowed_domains = ["www.elespectador.com"]
@@ -64,9 +66,8 @@ class ElEspectadorSpider(scrapy.Spider):
                 "playwright": True,
                 "autor": news_item.css("h3.Card-Author a::text").get(),
                 "category": category_name,
-                "archive_title": news_item.css("span.Card-ExclusiveContainer::text").get(),
                 "sub_category": news_item.css("h4.Card-Section a::text").get(),
-                "description": news_item.css("div.Card-Hook a::text").get(),
+                "subcription": news_item.css("span.Card-ExclusiveContainer::text").get(),
                 "raw_date": raw_date_clean,
                 "parsed_date": parsed_date,
             }
@@ -97,6 +98,7 @@ class ElEspectadorSpider(scrapy.Spider):
     # <h1 class="Title ArticleHeader-Title">
 
     def parse_news_page(self, response):
+        news_item = NewsItem()
         category_name = response.meta.get("category")
         
         # Get <h2 class="font--primary"> and <p> inside article/section in order
@@ -113,16 +115,16 @@ class ElEspectadorSpider(scrapy.Spider):
         # Join with new lines instead of spaces
         full_content = "\n".join(content_list)
    
-        yield {
-            "Category": category_name,
-            "Sub-Category": response.meta.get("sub_category"),
-            "Archive_Title": response.meta.get("archive_title"),
-            "Description": response.meta.get("description"),
-            "URL": response.url,
-            "Date_raw": response.meta.get("raw_date"),
-            "Date_parsed": response.meta.get("parsed_date"),
-            "Author": response.meta.get("autor"),
-            "Title": response.css("h1.ArticleHeader-Title::text").get(),
-            "Subtitle": response.css("h2.ArticleHeader-Hook div::text").get(),
-            "Content": full_content
-        }
+
+        news_item["category"] = category_name
+        news_item["sub_category"] = response.meta.get("sub_category")
+        news_item["subcription"] = response.meta.get("subcription")
+        news_item["url"] = response.url
+        news_item["date_raw"] = response.meta.get("raw_date")
+        news_item["date_parsed"] = response.meta.get("parsed_date")
+        news_item["author"] = response.meta.get("autor")
+        news_item["title"] = response.css("h1.ArticleHeader-Title::text").get()
+        news_item["article_header"] = response.css("h2.ArticleHeader-Hook div::text").get()
+        news_item["content"] = full_content
+
+        yield news_item
