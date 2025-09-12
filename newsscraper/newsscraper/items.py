@@ -11,19 +11,20 @@ class NewsscraperItem(scrapy.Item):
     # name = scrapy.Field()
     pass
 
-class NewsItem(scrapy.Item):
-    category = scrapy.Field()
-    sub_category = scrapy.Field()
-    subcription = scrapy.Field()
-    url = scrapy.Field()
-    date_raw = scrapy.Field()
-    date_parsed = scrapy.Field()
-    author = scrapy.Field()
-    title = scrapy.Field()
-    article_header = scrapy.Field()
-    content = scrapy.Field()
-
 def to_lower(text: str) -> str:
     if text is None:
         return ""
     return text.lower()
+
+class NewsItem(scrapy.Item):
+    category = scrapy.Field(text = to_lower)
+    sub_category = scrapy.Field(text = to_lower)
+    subcription = scrapy.Field(text = to_lower)
+    url = scrapy.Field()
+    date_raw = scrapy.Field()
+    date_parsed = scrapy.Field()
+    author = scrapy.Field(text = to_lower)
+    title = scrapy.Field()
+    article_header = scrapy.Field()
+    content = scrapy.Field()
+

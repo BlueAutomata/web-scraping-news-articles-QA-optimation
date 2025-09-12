@@ -93,4 +93,4 @@ DOWNLOAD_HANDLERS = {
     "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
 }
 
-PLAYWRIGHT_DEFAULT_NAVIGATION_TIMEOUT = 60000  # 60s
+PLAYWRIGHT_DEFAULT_NAVIGATION_TIMEOUT = 120000  # 60s
