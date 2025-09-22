@@ -29,6 +29,9 @@ class SemanaSpiderSpider(scrapy.Spider):
 
 
     def parse(self, response):
+        with open("page_debug.html", "wb") as f:
+            f.write(response.body)
+
         category_name = response.meta.get("category")
         news_items = response.css("main.main-section div.section div.grid-box.grid-2-md.grid-4-lg div.grid-wrap div.grid-box.grid-3-lg div.grid-item")
         for news_item in news_items:
