@@ -14,7 +14,9 @@ class ElEspectadorSpider(scrapy.Spider):
         "https://www.elespectador.com/archivo/judicial/", 
         "https://www.elespectador.com/archivo/economia/",
         "https://www.elespectador.com/archivo/mundo/",
-        "https://www.elespectador.com/archivo/bogota/"
+        "https://www.elespectador.com/archivo/bogota/",
+        "https://www.elespectador.com/archivo/salud/",
+        "https://www.elespectador.com/archivo/el-magazin-cultural/"
     ]
 
     def start_requests(self):
@@ -81,7 +83,7 @@ class ElEspectadorSpider(scrapy.Spider):
         
         # Pagination
         next_page = response.css("a[rel='next']::attr(href)").get()
-        if next_page is not None and "2" not in next_page:
+        if next_page is not None and "20" not in next_page:
             next_page_url = response.urljoin(next_page)
             yield scrapy.Request(
                 next_page_url,

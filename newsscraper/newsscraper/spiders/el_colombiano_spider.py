@@ -19,9 +19,14 @@ class ElColombianoSpiderSpider(scrapy.Spider):
         "https://www.elcolombiano.com/cultura/cine",
         "https://www.elcolombiano.com/cultura/literatura",
         "https://www.elcolombiano.com/cultura/musica"
+        "https://www.elcolombiano.com/internacional/america-latina",
+        "https://www.elcolombiano.com/internacional/eeuu",
+        "https://www.elcolombiano.com/internacional/venezuela",
+        "https://www.elcolombiano.com/internacional/europa",
+        "https://www.elcolombiano.com/internacional/medio-oriente"
         ]
 
-    max_clicks = 2  # control how many times to click
+    max_clicks = 10  # control how many times to click
 
     def start_requests(self):
         for url in self.start_urls:
