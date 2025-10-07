@@ -1,6 +1,6 @@
-import scrapy
 import os
-
+import uuid
+import scrapy
 from scrapy_playwright.page import PageMethod
 from datetime import datetime
 from urllib.parse import urlparse
@@ -9,30 +9,30 @@ from newsscraper.items import NewsItem
 class SemanaSpiderSpider(scrapy.Spider):
     name = "semana_spider"
     allowed_domains = ["www.semana.com"]
-    start_urls = [#"https://www.semana.com/politica/", 
-                  #"https://www.semana.com/nacion/" , 
-                  #"https://www.semana.com/economia/empresas/", 
-                  #"https://www.semana.com/economia/macroeconomia/", 
-                  #"https://www.semana.com/economia/emprendimiento/"
-                  #"https://www.semana.com/cultura/libros/"
-                  #"https://www.semana.com/cultura/cine/",
-                  #"https://www.semana.com/cultura/musica/",
-                  #"https://www.semana.com/cultura/arte/",
-                  #"https://www.semana.com/cultura/television/",
-                  "https://www.semana.com/salud/"
-                  ]
+    start_urls = [
+        "https://www.semana.com/politica/",
+        "https://www.semana.com/nacion/",
+        "https://www.semana.com/economia/empresas/",
+        "https://www.semana.com/economia/macroeconomia/",
+        "https://www.semana.com/economia/emprendimiento/",
+        "https://www.semana.com/cultura/libros/",
+        "https://www.semana.com/cultura/cine/",
+        "https://www.semana.com/cultura/musica/",
+        "https://www.semana.com/cultura/arte/",
+        "https://www.semana.com/cultura/television/",
+        "https://www.semana.com/salud/",
+    ]
 
-    max_clicks = 10  # control how many times to click
+    max_clicks = 10
 
     def start_requests(self):
-        for url in self.start_urls:
+        for i, url in enumerate(self.start_urls):
             page_methods = []
-            for i in range(self.max_clicks):
-                expected_count = 15 * (i + 1)  # 15 per click
+            for j in range(self.max_clicks):
+                expected_count = 15 * (j + 1)
                 page_methods.extend([
                     PageMethod("evaluate", "window.scrollBy(0, document.body.scrollHeight)"),
                     PageMethod("click", "a.styles__VerMas-sc-o51gjq-3.kdpnIy"),
-                    # wait until number of grid-items > expected_count
                     PageMethod(
                         "wait_for_function",
                         f"() => document.querySelectorAll('div.grid-item').length >= {expected_count}",
@@ -40,41 +40,51 @@ class SemanaSpiderSpider(scrapy.Spider):
                     ),
                 ])
 
+            # 👇 Force a new browser context every 10 URLs
             yield scrapy.Request(
                 url,
                 meta={
                     "playwright": True,
+                    "playwright_context": f"context_{i // 10}",  # new context per 10 URLs
+                    "playwright_context_kwargs": {"storage_state": None},  # disable cookies/localStorage
                     "playwright_page_goto_kwargs": {"wait_until": "domcontentloaded"},
                     "playwright_page_methods": page_methods,
-                    "category": os.path.basename(urlparse(url).path.rstrip('/'))
+                    "category": os.path.basename(urlparse(url).path.rstrip('/')),
                 },
-                callback=self.parse
+                callback=self.parse,
             )
 
-
+    
     def parse(self, response):
-        with open("page_debug.html", "wb") as f:
-            f.write(response.body)
-
         category_name = response.meta.get("category")
-        news_items = response.css("main.main-section div.section div.grid-box.grid-2-md.grid-4-lg div.grid-wrap div.grid-box.grid-3-lg div.grid-item")
+
+        news_items = response.css(
+            "main.main-section div.section div.grid-box.grid-2-md.grid-4-lg div.grid-wrap div.grid-box.grid-3-lg div.grid-item"
+        )
+
         for news_item in news_items:
             article_url = response.urljoin(news_item.css("h2.card-title.h4 a::attr(href)").get())
-            
-            # Pass basic info to article page
+            if not article_url:
+                continue
+
+            # Each article will get a unique browser context
+            unique_context = f"context_article_{uuid.uuid4()}"
+
             meta_data = {
                 "playwright": True,
                 "category": category_name,
                 "sub_category": news_item.css("p.card-category span::text").get(),
                 "subcription": "",
+                # 👇 brand-new context for this article only
+                "playwright_context": unique_context,
+                "playwright_context_kwargs": {"storage_state": None},
             }
 
-            if article_url:
-                yield scrapy.Request(
-                    article_url,
-                    callback=self.parse_news_page,
-                    meta=meta_data
-                )
+            yield scrapy.Request(
+                article_url,
+                callback=self.parse_news_page,
+                meta=meta_data
+            )
 
     def parse_news_page(self, response):
         news_item = NewsItem()
@@ -86,9 +96,7 @@ class SemanaSpiderSpider(scrapy.Spider):
             if p.xpath("string()").get()
         ]
 
-        # Join with new lines instead of spaces
         full_content = "\n".join(content_list)
-   
 
         news_item["category"] = category_name
         news_item["sub_category"] = response.meta.get("sub_category")
